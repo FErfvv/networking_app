@@ -17,6 +17,70 @@ export type RawContact = {
 
 type Line = { prop: string; params: Record<string, string[]>; value: string };
 
+/** Properties that carry embedded binary blobs (base64) we never use. */
+const BINARY_PROPS = new Set(["PHOTO", "LOGO", "SOUND", "KEY"]);
+/** Start of a property line: optional group, name, then ';' or ':'. Base64 never contains ';' or ':'. */
+const PROPERTY_START = /^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)?[;:]/;
+
+/**
+ * Line filter that drops PHOTO/LOGO/SOUND/KEY properties and their continuation
+ * lines. Photos are 95%+ of a typical contacts export, so stripping them lets
+ * huge files be read without holding the image data in memory.
+ * Handles RFC-folded continuations (leading whitespace) and vCard 2.1 base64
+ * blocks whose continuation lines aren't indented.
+ */
+export function createBinaryStripper() {
+  let skipping = false;
+  return (line: string): boolean => {
+    if (skipping) {
+      const continuation = /^[ \t]/.test(line) || (line.trim() !== "" && !PROPERTY_START.test(line));
+      if (continuation) return false;
+      skipping = false;
+    }
+    const m = PROPERTY_START.exec(line);
+    if (m) {
+      const name = line.slice(0, m[0].length - 1).split(".").pop()!.toUpperCase();
+      if (BINARY_PROPS.has(name)) {
+        skipping = true;
+        return false;
+      }
+    }
+    return true;
+  };
+}
+
+/** Strip binary properties from vCard text that's already in memory. */
+export function stripBinaryProperties(text: string): string {
+  const keep = createBinaryStripper();
+  return text
+    .split(/\r\n|\r|\n/)
+    .filter(keep)
+    .join("\n");
+}
+
+/**
+ * Read a .vcf file as a stream, discarding photos and other binary data as it
+ * goes, so files far larger than the photo-free result can be imported.
+ */
+export async function readVCardFile(file: Blob): Promise<string> {
+  const keep = createBinaryStripper();
+  const kept: string[] = [];
+  const reader = file.stream().pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (value) buffer += value;
+    // A chunk may end between '\r' and '\n'; hold the '\r' back so it isn't read as a blank line.
+    const heldCR = !done && buffer.endsWith("\r");
+    const lines = (heldCR ? buffer.slice(0, -1) : buffer).split(/\r\n|\r|\n/);
+    // The last element is a partial line; carry it into the next chunk.
+    buffer = done ? "" : lines.pop()! + (heldCR ? "\r" : "");
+    for (const line of lines) if (keep(line)) kept.push(line);
+    if (done) break;
+  }
+  return kept.join("\n");
+}
+
 export function parseVCards(text: string): RawContact[] {
   const out: RawContact[] = [];
   let card: Line[] | null = null;

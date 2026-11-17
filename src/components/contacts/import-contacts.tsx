@@ -17,7 +17,7 @@ import {
   type ImportCandidate,
   type MatchStatus,
 } from "@/lib/import/candidates";
-import { parseVCards, type RawContact } from "@/lib/import/vcard";
+import { parseVCards, readVCardFile, type RawContact } from "@/lib/import/vcard";
 import { IMPORT_BATCH_SIZE } from "@/lib/validation/contact";
 
 // Contact Picker API (https://developer.mozilla.org/docs/Web/API/Contact_Picker_API).
@@ -32,7 +32,8 @@ type ContactsManager = {
 const noopSubscribe = () => () => {};
 const hasContactPicker = () => "contacts" in navigator && "ContactsManager" in window;
 
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // photos make .vcf files large
+// Photos are stripped while the file streams in, so only the text stays in memory.
+const MAX_FILE_BYTES = 1024 * 1024 * 1024;
 
 type Row = ImportCandidate & { status: MatchStatus | "imported" };
 
@@ -112,11 +113,11 @@ export function ImportContacts({ existing }: { existing: ExistingKeys }) {
     e.target.value = ""; // allow picking the same file again
     if (!file) return;
     if (file.size > MAX_FILE_BYTES) {
-      toast.error("That file is too large (max 25 MB). Try exporting without photos.");
+      toast.error("That file is too large (max 1 GB). Try exporting without photos.");
       return;
     }
     try {
-      const text = await file.text();
+      const text = await readVCardFile(file);
       if (!/BEGIN:VCARD/i.test(text)) {
         toast.error("That doesn't look like a vCard (.vcf) file.");
         return;
@@ -216,7 +217,7 @@ export function ImportContacts({ existing }: { existing: ExistingKeys }) {
         <SourceButton
           icon={FileUp}
           title="Upload a vCard (.vcf)"
-          description="Exported from iPhone, Mac, iCloud or Google Contacts. Read on this device."
+          description="Exported from iPhone, Mac, iCloud or Google Contacts. Read on this device; photos are skipped."
           onClick={() => fileRef.current?.click()}
         />
         <input
