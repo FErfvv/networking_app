@@ -156,6 +156,8 @@ describe("importContacts", () => {
       expect.objectContaining({ id: uuid(1), user_id: USER_A, email: "ada@example.com", phone: "+1 555 010 2000" }),
       expect.objectContaining({ id: uuid(2), user_id: USER_A, name: "Grace", email: null }),
     ]);
+    // Imports never claim you met today.
+    for (const row of upsert.args[0] as { first_met_at: unknown }[]) expect(row.first_met_at).toBeNull();
   });
 
   it("rejects the batch without touching the database when a row is invalid", async () => {

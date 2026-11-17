@@ -25,7 +25,8 @@ export type ContactRow = {
   relationship_strength: RelationshipStrength;
   general_notes: string | null;
   where_met: string | null;
-  first_met_at: Timestamp;
+  /** NULL when unknown (e.g. imported contacts). */
+  first_met_at: Timestamp | null;
   first_event_id: string | null;
   next_follow_up_on: DateOnly | null;
   next_action: string | null;

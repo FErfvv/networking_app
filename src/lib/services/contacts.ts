@@ -255,6 +255,8 @@ export async function importContacts(
     other_contact: d.otherContact,
     linkedin_url: d.linkedinUrl,
     general_notes: d.generalNotes,
+    // Unknown: the import day is almost never when you actually met.
+    first_met_at: null,
   }));
 
   const { data, error } = await ctx.supabase

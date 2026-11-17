@@ -178,15 +178,19 @@ async function Profile({ params }: { params: PageProps<"/people/[id]">["params"]
             ) : null}
           </Detail>
           <Detail label="First met">
-            <span>{formatTimestamp(c.first_met_at, tz)}</span>
-            {firstEvent ? (
-              <Link
-                href={`/events/${firstEvent.id}`}
-                className="ml-2 inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
-              >
-                <CalendarDays className="size-3.5" />
-                {firstEvent.name}
-              </Link>
+            {c.first_met_at || firstEvent ? (
+              <>
+                {c.first_met_at ? <span className="mr-2">{formatTimestamp(c.first_met_at, tz)}</span> : null}
+                {firstEvent ? (
+                  <Link
+                    href={`/events/${firstEvent.id}`}
+                    className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    <CalendarDays className="size-3.5" />
+                    {firstEvent.name}
+                  </Link>
+                ) : null}
+              </>
             ) : null}
           </Detail>
           <Detail label="Tags" className="sm:col-span-2">

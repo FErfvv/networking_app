@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { MAX_CATEGORIES, RELATIONSHIP_STRENGTHS } from "@/lib/constants";
 import {
+  isIsoDate,
   optionalDate,
   optionalEmail,
   optionalLinkedIn,
@@ -39,7 +40,12 @@ export const contactUpdateSchema = z.object({
   otherContact: optionalText(500),
   linkedinUrl: optionalLinkedIn,
   whereMet: optionalText(200),
-  firstMetOn: optionalDate,
+  /** Omit/null = leave unchanged, "" = clear (unknown), YYYY-MM-DD = set. */
+  firstMetOn: z
+    .string()
+    .trim()
+    .refine((v) => v === "" || isIsoDate(v), { message: "Enter a valid date" })
+    .nullish(),
   categoryIds: z
     .array(z.uuid("Invalid category"))
     .max(MAX_CATEGORIES)
@@ -83,7 +89,9 @@ export function toContactColumns(d: ContactUpdateData) {
     other_contact: d.otherContact,
     linkedin_url: d.linkedinUrl,
     where_met: d.whereMet,
-    ...(d.firstMetOn ? { first_met_at: `${d.firstMetOn}T12:00:00Z` } : {}),
+    ...(d.firstMetOn == null
+      ? {}
+      : { first_met_at: d.firstMetOn ? `${d.firstMetOn}T12:00:00Z` : null }),
     relationship_strength: d.relationshipStrength,
     general_notes: d.generalNotes,
     next_follow_up_on: d.nextFollowUpOn,

@@ -39,7 +39,7 @@ export function ContactForm({
   contact: ContactOverviewRow;
   categories: Category[];
   tagSuggestions: string[];
-  /** first_met_at rendered as a local calendar date by the server. */
+  /** first_met_at rendered as a local calendar date by the server ("" if unknown). */
   firstMetOn: string;
 }) {
   const router = useRouter();
@@ -76,7 +76,7 @@ export function ContactForm({
     const input: ContactUpdateInput = {
       ...v,
       // Only send firstMetOn if the user changed it, so we keep the exact original timestamp.
-      firstMetOn: v.firstMetOn !== firstMetOn ? v.firstMetOn : null,
+      firstMetOn: v.firstMetOn !== firstMetOn ? v.firstMetOn : null, // "" clears it
       categoryIds,
       tags,
     };
@@ -134,7 +134,14 @@ export function ContactForm({
             <Input id="whereMet" value={v.whereMet} onChange={set("whereMet")} maxLength={200} className="h-11" />
           </F>
           <F label="Date first met" id="firstMetOn" error={errors.firstMetOn}>
-            <Input id="firstMetOn" type="date" value={v.firstMetOn} onChange={set("firstMetOn")} className="h-11" />
+            <div className="flex gap-2">
+              <Input id="firstMetOn" type="date" value={v.firstMetOn} onChange={set("firstMetOn")} className="h-11" />
+              {v.firstMetOn ? (
+                <Button type="button" variant="ghost" className="h-11" onClick={() => setV((s) => ({ ...s, firstMetOn: "" }))}>
+                  Clear
+                </Button>
+              ) : null}
+            </div>
           </F>
         </div>
       </fieldset>

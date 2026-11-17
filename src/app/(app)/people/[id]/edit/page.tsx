@@ -48,7 +48,7 @@ async function EditLoader({ params }: { params: PageProps<"/people/[id]/edit">["
         contact={contact as ContactOverviewRow}
         categories={categories}
         tagSuggestions={tags}
-        firstMetOn={todayInZone(tz, new Date(contact.first_met_at))}
+        firstMetOn={contact.first_met_at ? todayInZone(tz, new Date(contact.first_met_at)) : ""}
       />
     </>
   );

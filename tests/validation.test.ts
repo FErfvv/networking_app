@@ -166,6 +166,11 @@ describe("contactUpdateSchema", () => {
     expect(contactUpdateSchema.safeParse({ ...base, relationshipStrength: "best" }).success).toBe(false);
   });
 
+  it("clears the first-met date when it's emptied, and rejects bad dates", () => {
+    expect(toContactColumns(contactUpdateSchema.parse({ ...base, firstMetOn: "" })).first_met_at).toBeNull();
+    expect(contactUpdateSchema.safeParse({ ...base, firstMetOn: "2026-02-31" }).success).toBe(false);
+  });
+
   it("stores a changed first-met date at midday UTC to avoid timezone day shifts", () => {
     const cols = toContactColumns(contactUpdateSchema.parse({ ...base, firstMetOn: "2026-09-15" }));
     expect(cols.first_met_at).toBe("2026-09-15T12:00:00Z");
