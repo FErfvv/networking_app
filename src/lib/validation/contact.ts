@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RELATIONSHIP_CATEGORIES, RELATIONSHIP_STRENGTHS } from "@/lib/constants";
+import { RELATIONSHIP_STRENGTHS } from "@/lib/constants";
 import {
   optionalDate,
   optionalEmail,
@@ -40,7 +40,7 @@ export const contactUpdateSchema = z.object({
   linkedinUrl: optionalLinkedIn,
   whereMet: optionalText(200),
   firstMetOn: optionalDate,
-  relationshipCategory: z.enum(RELATIONSHIP_CATEGORIES),
+  categoryId: optionalUuid,
   relationshipStrength: z.enum(RELATIONSHIP_STRENGTHS),
   generalNotes: optionalText(20000),
   nextFollowUpOn: optionalDate,
@@ -80,7 +80,7 @@ export function toContactColumns(d: ContactUpdateData) {
     linkedin_url: d.linkedinUrl,
     where_met: d.whereMet,
     ...(d.firstMetOn ? { first_met_at: `${d.firstMetOn}T12:00:00Z` } : {}),
-    relationship_category: d.relationshipCategory,
+    category_id: d.categoryId,
     relationship_strength: d.relationshipStrength,
     general_notes: d.generalNotes,
     next_follow_up_on: d.nextFollowUpOn,

@@ -67,6 +67,35 @@ begin
   assert (select count(*) from public.find_similar_contacts('Lovelace')) = 1,
     'similar-name lookup should match a last name';
 
+  -- New users start with the default categories.
+  assert (select count(*) from public.categories) = 7, 'new user should get 7 default categories';
+  update public.contacts set category_id = (select id from public.categories where name = 'Engineer')
+  where id = 'c0000000-0000-4000-8000-00000000000a';
+  assert (select category_name from public.contact_overview) = 'Engineer',
+    'contact_overview should expose the category name';
+  update public.categories set name = 'Engineers', color = 'blue' where name = 'Engineer';
+  assert (select category_name || '/' || category_color from public.contact_overview) = 'Engineers/blue',
+    'renaming a category should apply to its contacts';
+  assert (select count(*) from public.search_contacts('engineers')) = 1,
+    'search should match the category name';
+  begin
+    insert into public.categories (name) values ('engineers');
+    raise exception 'FAIL: duplicate category (case-insensitive) was allowed';
+  exception when unique_violation then null;
+  end;
+  begin
+    insert into public.categories (name, color) values ('Bad color', 'chartreuse');
+    raise exception 'FAIL: unknown category color was allowed';
+  exception when check_violation then null;
+  end;
+  insert into public.categories (id, name, color)
+  values ('ca000000-0000-4000-8000-00000000000a', 'Investor', 'emerald');
+  begin
+    perform public.seed_default_categories('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+    raise exception 'FAIL: API user could call seed_default_categories';
+  exception when insufficient_privilege then null;
+  end;
+
   -- Tags are unique per user, case-insensitively.
   insert into public.tags (name) values ('ML');
   begin
@@ -91,6 +120,9 @@ begin
   assert (select count(*) from public.interactions) = 0, 'B must not see A''s interactions';
   assert (select count(*) from public.events) = 0, 'B must not see A''s events';
   assert (select count(*) from public.tags) = 0, 'B must not see A''s tags';
+  assert (select count(*) from public.categories) = 7, 'B should see only their own 7 categories';
+  assert not exists (select 1 from public.categories where name = 'Engineers'),
+    'B must not see A''s renamed category';
   assert (select count(*) from public.contact_overview) = 0, 'view must respect RLS';
   assert (select count(*) from public.search_contacts('ada')) = 0, 'search must respect RLS';
   assert (select count(*) from public.find_similar_contacts('ada')) = 0, 'suggestions must respect RLS';
@@ -118,6 +150,17 @@ begin
     raise exception 'FAIL: B linked an interaction to A''s contact';
   exception when foreign_key_violation then null;
   end;
+
+  -- Labeling B's contact with A's category is blocked by the composite FK.
+  begin
+    insert into public.contacts (name, category_id)
+    values ('Bob', 'ca000000-0000-4000-8000-00000000000a');
+    raise exception 'FAIL: B labeled a contact with A''s category';
+  exception when foreign_key_violation then null;
+  end;
+  update public.categories set name = 'hacked' where id = 'ca000000-0000-4000-8000-00000000000a';
+  get diagnostics n = row_count;
+  assert n = 0, 'B must not rename A''s category';
 
   -- Linking B's new contact to A's event is blocked too.
   begin
@@ -176,6 +219,11 @@ begin
     'interaction event links must be cleared';
   assert (select count(*) from public.contacts where user_id is null) = 0,
     'user_id must never be nulled by SET NULL';
+
+  -- Deleting a category keeps the contact and clears its category.
+  delete from public.categories where name = 'Engineers';
+  assert (select count(*) from public.contacts) = 1, 'contact must survive category deletion';
+  assert (select category_id is null from public.contacts), 'category_id must be cleared';
 
   -- Deleting a contact cascades to its interactions.
   delete from public.contacts where id = 'c0000000-0000-4000-8000-00000000000a';

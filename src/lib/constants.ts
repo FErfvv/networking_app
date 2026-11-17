@@ -1,25 +1,23 @@
-export const RELATIONSHIP_CATEGORIES = [
-  "recruiter",
-  "engineer",
-  "professor",
-  "alumni",
-  "student_peer",
-  "mentor",
-  "founder",
-  "other",
+/** Colors a category can use. Must match the check constraint on public.categories. */
+export const CATEGORY_COLORS = [
+  "slate",
+  "sky",
+  "blue",
+  "violet",
+  "pink",
+  "rose",
+  "orange",
+  "amber",
+  "emerald",
+  "teal",
 ] as const;
-export type RelationshipCategory = (typeof RELATIONSHIP_CATEGORIES)[number];
+export type CategoryColor = (typeof CATEGORY_COLORS)[number];
 
-export const CATEGORY_LABELS: Record<RelationshipCategory, string> = {
-  recruiter: "Recruiter",
-  engineer: "Engineer",
-  professor: "Professor",
-  alumni: "Alumni",
-  student_peer: "Student / Peer",
-  mentor: "Mentor",
-  founder: "Founder",
-  other: "Other",
-};
+/** Upper bound on categories per user, to keep pickers usable. */
+export const MAX_CATEGORIES = 50;
+
+/** Directory filter value for contacts without a category. */
+export const NO_CATEGORY = "none";
 
 export const RELATIONSHIP_STRENGTHS = [
   "new",

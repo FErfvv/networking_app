@@ -84,7 +84,7 @@ async function EventContent({ params }: { params: PageProps<"/events/[id]">["par
                       {[c.job_title, c.company].filter(Boolean).join(" · ") || "—"}
                     </p>
                   </div>
-                  <CategoryBadge category={c.relationship_category} />
+                  <CategoryBadge name={c.category_name} color={c.category_color} />
                 </Link>
               </li>
             ))}

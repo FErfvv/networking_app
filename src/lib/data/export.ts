@@ -2,11 +2,11 @@ import "server-only";
 import type { AuthedContext } from "@/lib/auth";
 import { toCsv } from "@/lib/csv";
 import {
-  CATEGORY_LABELS,
   INTERACTION_LABELS,
   STRENGTH_LABELS,
 } from "@/lib/constants";
 import type {
+  CategoryRow,
   ContactOverviewRow,
   EventRow,
   InteractionRow,
@@ -30,7 +30,7 @@ async function fetchAll<T>(
 }
 
 export async function loadExportData({ supabase }: AuthedContext) {
-  const [contacts, interactions, events, tags] = await Promise.all([
+  const [contacts, interactions, events, tags, categories] = await Promise.all([
     fetchAll<ContactOverviewRow>((a, b) =>
       supabase.from("contact_overview").select("*").order("created_at").range(a, b) as never,
     ),
@@ -41,8 +41,11 @@ export async function loadExportData({ supabase }: AuthedContext) {
       supabase.from("events").select("*").order("event_date").range(a, b),
     ),
     fetchAll<TagRow>((a, b) => supabase.from("tags").select("*").order("name").range(a, b)),
+    fetchAll<CategoryRow>((a, b) =>
+      supabase.from("categories").select("*").order("name").range(a, b),
+    ),
   ]);
-  return { contacts, interactions, events, tags };
+  return { contacts, interactions, events, tags, categories };
 }
 
 export type ExportData = Awaited<ReturnType<typeof loadExportData>>;
@@ -58,7 +61,7 @@ export function contactsCsv({ contacts, events }: ExportData): string {
     phone: c.phone,
     other_contact: c.other_contact,
     linkedin_url: c.linkedin_url,
-    relationship_category: CATEGORY_LABELS[c.relationship_category],
+    category: c.category_name,
     relationship_strength: STRENGTH_LABELS[c.relationship_strength],
     tags: c.tag_names,
     where_met: c.where_met,
@@ -79,7 +82,7 @@ export function contactsCsv({ contacts, events }: ExportData): string {
     { key: "phone", header: "Phone" },
     { key: "other_contact", header: "Other contact info" },
     { key: "linkedin_url", header: "LinkedIn" },
-    { key: "relationship_category", header: "Category" },
+    { key: "category", header: "Category" },
     { key: "relationship_strength", header: "Strength" },
     { key: "tags", header: "Tags" },
     { key: "where_met", header: "Where met" },
@@ -143,6 +146,7 @@ export function backupJson(data: ExportData, exportedAt = new Date()): string {
       exported_at: exportedAt.toISOString(),
       events: data.events.map(strip),
       tags: data.tags.map((t) => t.name),
+      categories: data.categories.map(({ id, name, color }) => ({ id, name, color })),
       contacts: data.contacts.map((c) => ({
         ...strip(c),
         interactions: (byContact.get(c.id) ?? []).map(strip),

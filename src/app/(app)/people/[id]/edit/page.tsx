@@ -6,7 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { ContactForm } from "@/components/contacts/contact-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
-import { getContact, listTagNames } from "@/lib/data/contacts";
+import { getContact, listCategories, listTagNames } from "@/lib/data/contacts";
 import { todayInZone } from "@/lib/dates";
 import { getUserTimeZone } from "@/lib/tz";
 import type { ContactOverviewRow } from "@/lib/types/database";
@@ -26,8 +26,9 @@ export default function EditContactPage({ params }: PageProps<"/people/[id]/edit
 async function EditLoader({ params }: { params: PageProps<"/people/[id]/edit">["params"] }) {
   const { id } = await params;
   const ctx = await requireUser();
-  const [contact, tags, tz] = await Promise.all([
+  const [contact, categories, tags, tz] = await Promise.all([
     getContact(ctx, id),
+    listCategories(ctx),
     listTagNames(ctx),
     getUserTimeZone(),
   ]);
@@ -45,6 +46,7 @@ async function EditLoader({ params }: { params: PageProps<"/people/[id]/edit">["
       <h1 className="mb-5 text-2xl font-semibold tracking-tight">Edit contact</h1>
       <ContactForm
         contact={contact as ContactOverviewRow}
+        categories={categories}
         tagSuggestions={tags}
         firstMetOn={todayInZone(tz, new Date(contact.first_met_at))}
       />

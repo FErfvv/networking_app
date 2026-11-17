@@ -18,24 +18,27 @@ import {
 } from "@/components/ui/select";
 import { updateContactAction } from "@/lib/actions/contacts";
 import {
-  CATEGORY_LABELS,
-  RELATIONSHIP_CATEGORIES,
   RELATIONSHIP_STRENGTHS,
   STRENGTH_LABELS,
-  type RelationshipCategory,
   type RelationshipStrength,
 } from "@/lib/constants";
+import type { Category } from "@/lib/services/categories";
 import { contactUpdateSchema, type ContactUpdateInput } from "@/lib/validation/contact";
 import { fieldErrorsOf } from "@/lib/validation/fields";
 import type { ContactOverviewRow } from "@/lib/types/database";
+import { CATEGORY_SWATCHES } from "./badges";
 import { TagInput } from "./tag-input";
+
+const NONE = "__none";
 
 export function ContactForm({
   contact,
+  categories,
   tagSuggestions,
   firstMetOn,
 }: {
   contact: ContactOverviewRow;
+  categories: Category[];
   tagSuggestions: string[];
   /** first_met_at rendered as a local calendar date by the server. */
   firstMetOn: string;
@@ -51,7 +54,7 @@ export function ContactForm({
     linkedinUrl: contact.linkedin_url ?? "",
     whereMet: contact.where_met ?? "",
     firstMetOn,
-    relationshipCategory: contact.relationship_category as RelationshipCategory,
+    categoryId: contact.category_id ?? "",
     relationshipStrength: contact.relationship_strength as RelationshipStrength,
     generalNotes: contact.general_notes ?? "",
     nextFollowUpOn: contact.next_follow_up_on ?? "",
@@ -136,12 +139,21 @@ export function ContactForm({
       <fieldset className="space-y-4">
         <legend className="mb-2 text-sm font-medium text-muted-foreground">Relationship</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <F label="Category" id="category">
-            <Select value={v.relationshipCategory} onValueChange={(x) => setV((s) => ({ ...s, relationshipCategory: x as RelationshipCategory }))}>
+          <F
+            label="Category"
+            id="category"
+            error={errors.categoryId}
+            hint={<Link href="/settings#categories" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Edit categories</Link>}
+          >
+            <Select value={v.categoryId || NONE} onValueChange={(x) => setV((s) => ({ ...s, categoryId: x === NONE ? "" : x }))}>
               <SelectTrigger id="category" className="h-11 w-full"><SelectValue /></SelectTrigger>
-              <SelectContent position="popper">
-                {RELATIONSHIP_CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+              <SelectContent position="popper" className="max-h-72">
+                <SelectItem value={NONE}>No category</SelectItem>
+                {categories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span aria-hidden className={`size-2 shrink-0 rounded-full ${CATEGORY_SWATCHES[c.color]}`} />
+                    {c.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -191,10 +203,13 @@ export function ContactForm({
   );
 }
 
-function F({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {
+function F({ label, id, error, hint, children }: { label: string; id: string; error?: string; hint?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor={id}>{label}</Label>
+        {hint}
+      </div>
       {children}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>

@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
 import {
   DIRECTORY_LIMIT,
+  listCategories,
   listCompanies,
   listContacts,
   parseDirectoryParams,
@@ -51,16 +52,17 @@ export default function PeoplePage({ searchParams }: PageProps<"/people">) {
 async function Directory({ searchParams }: { searchParams: PageProps<"/people">["searchParams"] }) {
   const ctx = await requireUser();
   const params = parseDirectoryParams(await searchParams);
-  const [contacts, companies, { today, tz }] = await Promise.all([
+  const [contacts, companies, categories, { today, tz }] = await Promise.all([
     listContacts(ctx, params),
     listCompanies(ctx),
+    listCategories(ctx),
     getUserToday(),
   ]);
   const filtered = Boolean(params.q || params.category || params.company);
 
   return (
     <>
-      <DirectoryFilters companies={companies} />
+      <DirectoryFilters companies={companies} categories={categories} />
       {contacts.length === 0 ? (
         filtered ? (
           <EmptyState

@@ -72,7 +72,7 @@ async function Profile({ params }: { params: PageProps<"/people/[id]">["params"]
             </p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <CategoryBadge category={c.relationship_category} />
+            <CategoryBadge name={c.category_name} color={c.category_color} />
             <StrengthIndicator strength={c.relationship_strength} />
           </div>
         </div>

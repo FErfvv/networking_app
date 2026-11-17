@@ -82,7 +82,7 @@ scripts/generate-icons.mjs             Regenerates PWA icons
 ### 1. Create a Supabase project (free)
 
 1. Sign in at [supabase.com](https://supabase.com) → **New project**. Pick a region near you and save the database password somewhere safe.
-2. Open **SQL Editor** → **New query**, paste the whole of [`supabase/migrations/20261107000000_init.sql`](supabase/migrations/20261107000000_init.sql) and click **Run**. Then do the same, in order, for every later file in [`supabase/migrations/`](supabase/migrations/) (e.g. `20261112000000_contact_phone_other.sql`).
+2. Open **SQL Editor** → **New query**, paste the whole of [`supabase/migrations/20261107000000_init.sql`](supabase/migrations/20261107000000_init.sql) and click **Run**. Then do the same, in order, for every later file in [`supabase/migrations/`](supabase/migrations/) (e.g. `20261112000000_contact_phone_other.sql`, then `20261116000000_custom_categories.sql`).
    - Or use the CLI: `npx supabase login && npx supabase link --project-ref <ref> && npx supabase db push`
 3. *(Recommended)* Verify security: in a new SQL Editor query, paste and run [`supabase/tests/rls.sql`](supabase/tests/rls.sql). It creates two throwaway users, checks that neither can read or link the other's data, then **rolls everything back**. It should finish without errors; any failure raises a descriptive exception.
 

@@ -128,7 +128,7 @@ describe("contactUpdateSchema", () => {
     linkedinUrl: "",
     whereMet: "",
     firstMetOn: null,
-    relationshipCategory: "engineer" as const,
+    categoryId: "00000000-0000-4000-8000-000000000040",
     relationshipStrength: "new" as const,
     generalNotes: "",
     nextFollowUpOn: "",
@@ -141,7 +141,7 @@ describe("contactUpdateSchema", () => {
     const cols = toContactColumns(d);
     expect(cols.next_follow_up_on).toBe("2026-12-01");
     expect(cols.next_action).toBe("Send resume");
-    expect(cols.relationship_category).toBe("engineer");
+    expect(cols.category_id).toBe("00000000-0000-4000-8000-000000000040");
     expect("first_met_at" in cols).toBe(false); // untouched unless changed
   });
 
@@ -153,8 +153,13 @@ describe("contactUpdateSchema", () => {
     expect(contactUpdateSchema.safeParse({ ...base, nextFollowUpOn: d }).success).toBe(false);
   });
 
-  it("rejects unknown categories and strengths", () => {
-    expect(contactUpdateSchema.safeParse({ ...base, relationshipCategory: "boss" }).success).toBe(false);
+  it("treats a blank category as none", () => {
+    expect(toContactColumns(contactUpdateSchema.parse({ ...base, categoryId: "" })).category_id).toBeNull();
+    expect(toContactColumns(contactUpdateSchema.parse({ ...base, categoryId: null })).category_id).toBeNull();
+  });
+
+  it("rejects non-UUID categories and unknown strengths", () => {
+    expect(contactUpdateSchema.safeParse({ ...base, categoryId: "boss" }).success).toBe(false);
     expect(contactUpdateSchema.safeParse({ ...base, relationshipStrength: "best" }).success).toBe(false);
   });
 

@@ -1,11 +1,7 @@
 import "server-only";
 import { z } from "zod";
-import {
-  CONTACT_SORTS,
-  RELATIONSHIP_CATEGORIES,
-  type ContactSort,
-  type RelationshipCategory,
-} from "@/lib/constants";
+import { CONTACT_SORTS, NO_CATEGORY, type ContactSort } from "@/lib/constants";
+import type { Category } from "@/lib/services/categories";
 import type {
   ContactOverviewRow,
   ContactRow,
@@ -19,7 +15,8 @@ export const DIRECTORY_LIMIT = 1000;
 export type DirectoryParams = {
   q: string;
   sort: ContactSort;
-  category: RelationshipCategory | null;
+  /** A category id, NO_CATEGORY for uncategorized, or null for all. */
+  category: string | null;
   company: string | null;
 };
 
@@ -30,7 +27,7 @@ export function parseDirectoryParams(
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const sort = z.enum(CONTACT_SORTS).catch("recent").parse(one(sp.sort) || "recent");
   const category = z
-    .enum(RELATIONSHIP_CATEGORIES)
+    .union([z.uuid(), z.literal(NO_CATEGORY)])
     .nullable()
     .catch(null)
     .parse(one(sp.category) || null);
@@ -51,7 +48,8 @@ export async function listContacts(
     ? supabase.rpc("search_contacts", { q: params.q }).select("*")
     : supabase.from("contact_overview").select("*");
 
-  if (params.category) query = query.eq("relationship_category", params.category);
+  if (params.category === NO_CATEGORY) query = query.is("category_id", null);
+  else if (params.category) query = query.eq("category_id", params.category);
   if (params.company) query = query.ilike("company", escapeIlike(params.company));
 
   switch (params.sort) {
@@ -174,4 +172,15 @@ export async function getContact(
 export async function listTagNames({ supabase }: AuthedContext): Promise<string[]> {
   const { data } = await supabase.from("tags").select("name").order("name").limit(500);
   return (data ?? []).map((t) => t.name);
+}
+
+/** The user's categories, alphabetically. */
+export async function listCategories({ supabase }: AuthedContext): Promise<Category[]> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, color")
+    .order("name")
+    .limit(500);
+  if (error) throw new Error(`Failed to load categories: ${error.message}`);
+  return data ?? [];
 }

@@ -4,8 +4,8 @@
  * once the project is linked, if you prefer generated types.
  */
 import type {
+  CategoryColor,
   InteractionType,
-  RelationshipCategory,
   RelationshipStrength,
 } from "@/lib/constants";
 
@@ -22,7 +22,7 @@ export type ContactRow = {
   phone: string | null;
   other_contact: string | null;
   linkedin_url: string | null;
-  relationship_category: RelationshipCategory;
+  category_id: string | null;
   relationship_strength: RelationshipStrength;
   general_notes: string | null;
   where_met: string | null;
@@ -35,6 +35,8 @@ export type ContactRow = {
 };
 
 export type ContactOverviewRow = ContactRow & {
+  category_name: string | null;
+  category_color: CategoryColor | null;
   last_interaction_at: Timestamp | null;
   tag_names: string[];
 };
@@ -61,6 +63,14 @@ export type EventRow = {
   description: string | null;
   created_at: Timestamp;
   updated_at: Timestamp;
+};
+
+export type CategoryRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: CategoryColor;
+  created_at: Timestamp;
 };
 
 export type TagRow = {
@@ -115,7 +125,7 @@ export type Database = {
           | "phone"
           | "other_contact"
           | "linkedin_url"
-          | "relationship_category"
+          | "category_id"
           | "relationship_strength"
           | "general_notes"
           | "where_met"
@@ -127,6 +137,13 @@ export type Database = {
           | "updated_at"
         >,
         [
+          {
+            foreignKeyName: "contacts_category_id_user_id_fkey";
+            columns: ["category_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id", "user_id"];
+          },
           {
             foreignKeyName: "contacts_first_event_id_user_id_fkey";
             columns: ["first_event_id", "user_id"];
@@ -166,6 +183,10 @@ export type Database = {
             referencedColumns: ["id", "user_id"];
           },
         ]
+      >;
+      categories: Table<
+        CategoryRow,
+        WithOptional<CategoryRow, "id" | "user_id" | "color" | "created_at">
       >;
       tags: Table<TagRow, WithOptional<TagRow, "id" | "user_id" | "created_at">>;
       contact_tags: Table<
@@ -236,7 +257,6 @@ export type Database = {
       };
     };
     Enums: {
-      relationship_category: RelationshipCategory;
       relationship_strength: RelationshipStrength;
       interaction_type: InteractionType;
     };

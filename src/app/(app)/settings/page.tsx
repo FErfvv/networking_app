@@ -3,11 +3,13 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { Download, FileJson, FileSpreadsheet, Import } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
+import { CategoryManager } from "@/components/settings/category-manager";
 import { SignOutButton } from "@/components/settings/sign-out-button";
 import { ThemeToggle } from "@/components/settings/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
+import { listCategories } from "@/lib/data/contacts";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -19,6 +21,10 @@ export default function SettingsPage() {
         <Section title="Appearance">
           <ThemeToggle />
         </Section>
+
+        <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
+          <Categories />
+        </Suspense>
 
         <Section
           title="Import contacts"
@@ -63,6 +69,20 @@ export default function SettingsPage() {
   );
 }
 
+async function Categories() {
+  const ctx = await requireUser();
+  const categories = await listCategories(ctx);
+  return (
+    <Section
+      id="categories"
+      title="Categories"
+      description="The labels you can give people. Deleting one keeps the people, just without a category."
+    >
+      <CategoryManager initial={categories} />
+    </Section>
+  );
+}
+
 async function Account() {
   const { email, userId } = await requireUser();
   return (
@@ -79,16 +99,18 @@ async function Account() {
 }
 
 function Section({
+  id,
   title,
   description,
   children,
 }: {
+  id?: string;
   title: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border bg-card p-4">
+    <section id={id} className="scroll-mt-20 rounded-xl border bg-card p-4">
       <h2 className="font-medium">{title}</h2>
       {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
       <div className="mt-3">{children}</div>

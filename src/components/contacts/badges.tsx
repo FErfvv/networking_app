@@ -1,33 +1,56 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import {
-  CATEGORY_LABELS,
   STRENGTH_LABELS,
-  type RelationshipCategory,
+  type CategoryColor,
   type RelationshipStrength,
 } from "@/lib/constants";
 
-const CATEGORY_STYLES: Record<RelationshipCategory, string> = {
-  recruiter: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
-  engineer: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
-  professor: "bg-amber-500/10 text-amber-800 dark:text-amber-300",
-  alumni: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  student_peer: "bg-teal-500/10 text-teal-700 dark:text-teal-300",
-  mentor: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
-  founder: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
-  other: "bg-muted text-muted-foreground",
+/** Full class strings so Tailwind can see them at build time. */
+export const CATEGORY_STYLES: Record<CategoryColor, string> = {
+  slate: "bg-muted text-muted-foreground",
+  sky: "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+  blue: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+  violet: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+  pink: "bg-pink-500/10 text-pink-700 dark:text-pink-300",
+  rose: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+  orange: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
+  amber: "bg-amber-500/10 text-amber-800 dark:text-amber-300",
+  emerald: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+  teal: "bg-teal-500/10 text-teal-700 dark:text-teal-300",
 };
 
+/** Solid swatch per color, for pickers and dots. */
+export const CATEGORY_SWATCHES: Record<CategoryColor, string> = {
+  slate: "bg-slate-400",
+  sky: "bg-sky-500",
+  blue: "bg-blue-500",
+  violet: "bg-violet-500",
+  pink: "bg-pink-500",
+  rose: "bg-rose-500",
+  orange: "bg-orange-500",
+  amber: "bg-amber-500",
+  emerald: "bg-emerald-500",
+  teal: "bg-teal-500",
+};
+
+/** Renders nothing for uncategorized contacts. */
 export function CategoryBadge({
-  category,
+  name,
+  color,
   className,
 }: {
-  category: RelationshipCategory;
+  name: string | null;
+  color: CategoryColor | null;
   className?: string;
 }) {
+  if (!name) return null;
   return (
-    <Badge variant="secondary" className={cn("border-0 font-medium", CATEGORY_STYLES[category], className)}>
-      {CATEGORY_LABELS[category]}
+    <Badge
+      variant="secondary"
+      className={cn("border-0 font-medium", CATEGORY_STYLES[color ?? "slate"], className)}
+    >
+      {name}
     </Badge>
   );
 }

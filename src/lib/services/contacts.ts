@@ -102,7 +102,11 @@ export async function updateContact(
     .select("id")
     .maybeSingle();
 
-  if (error) return fail("Could not update contact.");
+  if (error) {
+    // FK violation: the chosen category was deleted (or isn't yours).
+    if (error.code === "23503") return fail("That category no longer exists. Pick another one.");
+    return fail("Could not update contact.");
+  }
   if (!data) return fail("Contact not found.");
 
   const tagResult = await setContactTags(ctx, contactId, parsed.data.tags);

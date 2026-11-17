@@ -12,17 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  CATEGORY_LABELS,
-  CONTACT_SORTS,
-  RELATIONSHIP_CATEGORIES,
-  SORT_LABELS,
-} from "@/lib/constants";
+import { CONTACT_SORTS, NO_CATEGORY, SORT_LABELS } from "@/lib/constants";
+import type { Category } from "@/lib/services/categories";
+import { CATEGORY_SWATCHES } from "./badges";
 
 const ALL = "__all";
 
 /** Search/sort/filter controls. State lives in the URL so it's shareable and back-button friendly. */
-export function DirectoryFilters({ companies }: { companies: string[] }) {
+export function DirectoryFilters({
+  companies,
+  categories,
+}: {
+  companies: string[];
+  categories: Category[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -91,13 +94,15 @@ export function DirectoryFilters({ companies }: { companies: string[] }) {
           <SelectTrigger aria-label="Filter by category" className="h-9 shrink-0 rounded-full">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent position="popper">
+          <SelectContent position="popper" className="max-h-72">
             <SelectItem value={ALL}>All categories</SelectItem>
-            {RELATIONSHIP_CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c}>
-                {CATEGORY_LABELS[c]}
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                <span aria-hidden className={`size-2 shrink-0 rounded-full ${CATEGORY_SWATCHES[c.color]}`} />
+                {c.name}
               </SelectItem>
             ))}
+            <SelectItem value={NO_CATEGORY}>No category</SelectItem>
           </SelectContent>
         </Select>
 

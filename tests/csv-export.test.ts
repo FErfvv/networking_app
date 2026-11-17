@@ -50,6 +50,9 @@ const data: ExportData = {
     },
   ],
   tags: [{ id: uuid(20), user_id: USER_A, name: "ML", created_at: "2026-10-01T00:00:00Z" }],
+  categories: [
+    { id: uuid(40), user_id: USER_A, name: "Student / Peer", color: "teal", created_at: "2026-10-01T00:00:00Z" },
+  ],
   contacts: [
     {
       id: uuid(1),
@@ -61,7 +64,9 @@ const data: ExportData = {
       phone: "+1 (555) 010-2000",
       other_contact: null,
       linkedin_url: null,
-      relationship_category: "student_peer",
+      category_id: uuid(40),
+      category_name: "Student / Peer",
+      category_color: "teal",
       relationship_strength: "acquaintance",
       general_notes: "Likes math",
       where_met: "Career Fair",
