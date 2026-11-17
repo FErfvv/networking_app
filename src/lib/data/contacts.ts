@@ -50,8 +50,8 @@ export async function listContacts(
     ? supabase.rpc("search_contacts", { q: params.q }).select("*")
     : supabase.from("contact_overview").select("*");
 
-  if (params.category === NO_CATEGORY) query = query.is("category_id", null);
-  else if (params.category) query = query.eq("category_id", params.category);
+  if (params.category === NO_CATEGORY) query = query.filter("category_ids", "eq", "{}");
+  else if (params.category) query = query.contains("category_ids", [params.category]);
   if (params.company) query = query.ilike("company", escapeIlike(params.company));
 
   switch (params.sort) {

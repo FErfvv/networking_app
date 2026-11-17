@@ -22,7 +22,6 @@ export type ContactRow = {
   phone: string | null;
   other_contact: string | null;
   linkedin_url: string | null;
-  category_id: string | null;
   relationship_strength: RelationshipStrength;
   general_notes: string | null;
   where_met: string | null;
@@ -34,9 +33,13 @@ export type ContactRow = {
   updated_at: Timestamp;
 };
 
+/** A category as embedded in contact_overview.categories. */
+export type ContactCategory = Pick<CategoryRow, "id" | "name" | "color">;
+
 export type ContactOverviewRow = ContactRow & {
-  category_name: string | null;
-  category_color: CategoryColor | null;
+  /** Sorted by name; empty when uncategorized. */
+  categories: ContactCategory[];
+  category_ids: string[];
   last_interaction_at: Timestamp | null;
   tag_names: string[];
 };
@@ -77,6 +80,13 @@ export type TagRow = {
   id: string;
   user_id: string;
   name: string;
+  created_at: Timestamp;
+};
+
+export type ContactCategoryRow = {
+  contact_id: string;
+  category_id: string;
+  user_id: string;
   created_at: Timestamp;
 };
 
@@ -125,7 +135,6 @@ export type Database = {
           | "phone"
           | "other_contact"
           | "linkedin_url"
-          | "category_id"
           | "relationship_strength"
           | "general_notes"
           | "where_met"
@@ -137,13 +146,6 @@ export type Database = {
           | "updated_at"
         >,
         [
-          {
-            foreignKeyName: "contacts_category_id_user_id_fkey";
-            columns: ["category_id", "user_id"];
-            isOneToOne: false;
-            referencedRelation: "categories";
-            referencedColumns: ["id", "user_id"];
-          },
           {
             foreignKeyName: "contacts_first_event_id_user_id_fkey";
             columns: ["first_event_id", "user_id"];
@@ -187,6 +189,26 @@ export type Database = {
       categories: Table<
         CategoryRow,
         WithOptional<CategoryRow, "id" | "user_id" | "color" | "created_at">
+      >;
+      contact_categories: Table<
+        ContactCategoryRow,
+        WithOptional<ContactCategoryRow, "user_id" | "created_at">,
+        [
+          {
+            foreignKeyName: "contact_categories_contact_id_user_id_fkey";
+            columns: ["contact_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id", "user_id"];
+          },
+          {
+            foreignKeyName: "contact_categories_category_id_user_id_fkey";
+            columns: ["category_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id", "user_id"];
+          },
+        ]
       >;
       tags: Table<TagRow, WithOptional<TagRow, "id" | "user_id" | "created_at">>;
       contact_tags: Table<

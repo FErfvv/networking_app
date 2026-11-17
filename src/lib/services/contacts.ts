@@ -102,17 +102,53 @@ export async function updateContact(
     .select("id")
     .maybeSingle();
 
-  if (error) {
-    // FK violation: the chosen category was deleted (or isn't yours).
-    if (error.code === "23503") return fail("That category no longer exists. Pick another one.");
-    return fail("Could not update contact.");
-  }
+  if (error) return fail("Could not update contact.");
   if (!data) return fail("Contact not found.");
+
+  const categoryResult = await setContactCategories(ctx, contactId, parsed.data.categoryIds);
+  if (!categoryResult.ok) return categoryResult;
 
   const tagResult = await setContactTags(ctx, contactId, parsed.data.tags);
   if (!tagResult.ok) return tagResult;
 
   return ok({ contactId });
+}
+
+/**
+ * Make a contact's categories exactly `categoryIds`: unlink the ones no longer
+ * chosen, then link new ones (existing links are left alone, so a failure
+ * part-way never strips categories the user kept).
+ */
+export async function setContactCategories(
+  ctx: ServiceCtx,
+  contactId: string,
+  categoryIds: string[],
+): Promise<ActionResult<undefined>> {
+  const { supabase, userId } = ctx;
+
+  let del = supabase
+    .from("contact_categories")
+    .delete()
+    .eq("contact_id", contactId)
+    .eq("user_id", userId);
+  if (categoryIds.length) del = del.not("category_id", "in", `(${categoryIds.join(",")})`);
+  const { error: delErr } = await del;
+  if (delErr) return fail("Could not update categories.");
+
+  if (categoryIds.length) {
+    const { error: insErr } = await supabase
+      .from("contact_categories")
+      .upsert(
+        categoryIds.map((category_id) => ({ contact_id: contactId, category_id, user_id: userId })),
+        { onConflict: "contact_id,category_id", ignoreDuplicates: true },
+      );
+    if (insErr) {
+      // FK violation: a chosen category was deleted meanwhile (or isn't yours).
+      if (insErr.code === "23503") return fail("One of those categories no longer exists. Refresh and try again.");
+      return fail("Could not update categories.");
+    }
+  }
+  return ok(undefined);
 }
 
 /** Replace a contact's tags, creating any missing tags (case-insensitive). */

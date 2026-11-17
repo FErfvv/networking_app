@@ -64,9 +64,11 @@ const data: ExportData = {
       phone: "+1 (555) 010-2000",
       other_contact: null,
       linkedin_url: null,
-      category_id: uuid(40),
-      category_name: "Student / Peer",
-      category_color: "teal",
+      categories: [
+        { id: uuid(40), name: "Student / Peer", color: "teal" },
+        { id: uuid(41), name: "Mentor", color: "rose" },
+      ],
+      category_ids: [uuid(40), uuid(41)],
       relationship_strength: "acquaintance",
       general_notes: "Likes math",
       where_met: "Career Fair",
@@ -114,7 +116,7 @@ describe("exports", () => {
     const [header, row] = csv.replace("﻿", "").split("\r\n");
     expect(header.split(",")[0]).toBe("Name");
     expect(row).toContain('"Ada, Countess"');
-    expect(row).toContain("Student / Peer");
+    expect(row).toContain("Student / Peer; Mentor");
     expect(row).toContain("Acquaintance");
     expect(row).toContain("Career Fair");
     expect(row).toContain("2026-11-10");

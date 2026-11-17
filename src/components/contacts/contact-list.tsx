@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { describeDue, followUpBucket, formatDateOnly, formatTimestamp } from "@/lib/dates";
 import type { ContactOverviewRow } from "@/lib/types/database";
-import { Avatar, CategoryBadge } from "./badges";
+import { Avatar, CategoryBadges } from "./badges";
 import { DeleteContactButton } from "./delete-contact-button";
 
 type Props = { contacts: ContactOverviewRow[]; today: string; tz: string };
@@ -31,7 +31,7 @@ export function ContactList({ contacts, today, tz }: Props) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <p className="truncate font-medium">{c.name}</p>
-                  <CategoryBadge name={c.category_name} color={c.category_color} className="shrink-0" />
+                  <CategoryBadges categories={c.categories} max={1} className="shrink-0 flex-nowrap" />
                 </div>
                 {c.job_title || c.company ? (
                   <p className="truncate text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ export function ContactList({ contacts, today, tz }: Props) {
               <TableHead className="pl-4">Name</TableHead>
               <TableHead>Company</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead>Categories</TableHead>
               <TableHead>Last interaction</TableHead>
               <TableHead>Follow-up</TableHead>
               <TableHead className="w-24 pr-4 text-right">
@@ -85,7 +85,7 @@ export function ContactList({ contacts, today, tz }: Props) {
                 <TableCell className="max-w-40 truncate text-muted-foreground">{c.company ?? "—"}</TableCell>
                 <TableCell className="max-w-40 truncate text-muted-foreground">{c.job_title ?? "—"}</TableCell>
                 <TableCell>
-                  <CategoryBadge name={c.category_name} color={c.category_color} />
+                  <CategoryBadges categories={c.categories} max={2} />
                 </TableCell>
                 <TableCell className="text-muted-foreground">
                   {c.last_interaction_at ? formatTimestamp(c.last_interaction_at, tz) : "—"}

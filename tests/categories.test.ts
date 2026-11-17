@@ -83,14 +83,40 @@ describe("updateCategory / deleteCategory", () => {
   });
 });
 
-describe("updateContact with a category", () => {
+describe("updateContact categories", () => {
+  const input = { name: "Ada", categoryIds: [uuid(40), uuid(41)], relationshipStrength: "new" as const };
+
+  it("unlinks only removed categories, then links the chosen ones idempotently", async () => {
+    const fake = createFakeSupabase({ from: { contacts: { data: { id: uuid(1) } } } });
+    const r = await updateContact(ctx(fake), uuid(1), input);
+    expect(r.ok).toBe(true);
+    const [del, ins] = fake.calls.filter((c) => c.table === "contact_categories");
+    expect(del.ops).toContainEqual({ op: "eq", args: ["user_id", USER_A] });
+    expect(del.ops).toContainEqual({ op: "not", args: ["category_id", "in", `(${uuid(40)},${uuid(41)})`] });
+    const upsert = ins.ops.find((o) => o.op === "upsert");
+    expect(upsert?.args[0]).toEqual([
+      { contact_id: uuid(1), category_id: uuid(40), user_id: USER_A },
+      { contact_id: uuid(1), category_id: uuid(41), user_id: USER_A },
+    ]);
+  });
+
+  it("clears all categories when none are chosen", async () => {
+    const fake = createFakeSupabase({ from: { contacts: { data: { id: uuid(1) } } } });
+    await updateContact(ctx(fake), uuid(1), { ...input, categoryIds: [] });
+    const calls = fake.calls.filter((c) => c.table === "contact_categories");
+    expect(calls).toHaveLength(1);
+    expect(calls[0].ops.some((o) => o.op === "not")).toBe(false);
+    expect(calls[0].ops.some((o) => o.op === "delete")).toBe(true);
+  });
+
   it("reports a deleted category clearly", async () => {
-    const fake = createFakeSupabase({ from: { contacts: { error: { code: "23503" } } } });
-    const r = await updateContact(ctx(fake), uuid(1), {
-      name: "Ada",
-      categoryId: uuid(40),
-      relationshipStrength: "new",
+    const fake = createFakeSupabase({
+      from: {
+        contacts: { data: { id: uuid(1) } },
+        contact_categories: [{ error: null }, { error: { code: "23503" } }],
+      },
     });
-    expect(r).toMatchObject({ ok: false, error: expect.stringMatching(/category no longer exists/) });
+    const r = await updateContact(ctx(fake), uuid(1), input);
+    expect(r).toMatchObject({ ok: false, error: expect.stringMatching(/no longer exists/) });
   });
 });

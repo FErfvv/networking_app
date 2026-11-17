@@ -99,7 +99,7 @@ describe("addInteraction", () => {
 describe("updateContact / deleteContact ownership", () => {
   const base = {
     name: "Ada",
-    categoryId: uuid(40),
+    categoryIds: [uuid(40)],
     relationshipStrength: "established" as const,
     nextFollowUpOn: "2026-12-01",
     tags: ["ML"],

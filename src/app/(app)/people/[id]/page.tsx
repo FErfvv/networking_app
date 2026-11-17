@@ -12,7 +12,7 @@ import {
   Phone,
 } from "lucide-react";
 import { BackToPeople } from "@/components/contacts/back-to-people";
-import { Avatar, CategoryBadge, StrengthIndicator } from "@/components/contacts/badges";
+import { Avatar, CategoryBadges, StrengthIndicator } from "@/components/contacts/badges";
 import { DeleteContactButton } from "@/components/contacts/delete-contact-button";
 import { FollowUpChip } from "@/components/contacts/contact-list";
 import { EmptyState } from "@/components/empty-state";
@@ -66,7 +66,7 @@ async function Profile({ params }: { params: PageProps<"/people/[id]">["params"]
             </p>
           ) : null}
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <CategoryBadge name={c.category_name} color={c.category_color} />
+            <CategoryBadges categories={c.categories} />
             <StrengthIndicator strength={c.relationship_strength} />
           </div>
         </div>

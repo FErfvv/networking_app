@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ArrowLeft, CalendarDays, MapPin, MessagesSquare, Users } from "lucide-react";
-import { Avatar, CategoryBadge } from "@/components/contacts/badges";
+import { Avatar, CategoryBadges } from "@/components/contacts/badges";
 import { EmptyState } from "@/components/empty-state";
 import { EventDetailActions } from "@/components/events/event-detail-actions";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -84,7 +84,7 @@ async function EventContent({ params }: { params: PageProps<"/events/[id]">["par
                       {[c.job_title, c.company].filter(Boolean).join(" · ") || "—"}
                     </p>
                   </div>
-                  <CategoryBadge name={c.category_name} color={c.category_color} />
+                  <CategoryBadges categories={c.categories} max={1} className="shrink-0 flex-nowrap" />
                 </Link>
               </li>
             ))}

@@ -69,12 +69,26 @@ begin
 
   -- New users start with the default categories.
   assert (select count(*) from public.categories) = 7, 'new user should get 7 default categories';
-  update public.contacts set category_id = (select id from public.categories where name = 'Engineer')
-  where id = 'c0000000-0000-4000-8000-00000000000a';
-  assert (select category_name from public.contact_overview) = 'Engineer',
-    'contact_overview should expose the category name';
+  -- A contact can have several categories.
+  insert into public.contact_categories (contact_id, category_id)
+  select 'c0000000-0000-4000-8000-00000000000a', id
+  from public.categories where name in ('Engineer', 'Mentor');
+  assert (select jsonb_array_length(categories) from public.contact_overview) = 2,
+    'contact_overview should list both categories';
+  assert (select categories->0->>'name' from public.contact_overview) = 'Engineer',
+    'categories should be sorted by name';
+  assert (select count(*) from public.contact_overview
+          where category_ids @> array[(select id from public.categories where name = 'Mentor')]) = 1,
+    'category_ids should support filtering by one category';
+  begin
+    insert into public.contact_categories (contact_id, category_id)
+    select 'c0000000-0000-4000-8000-00000000000a', id from public.categories where name = 'Mentor';
+    raise exception 'FAIL: the same category was linked twice';
+  exception when unique_violation then null;
+  end;
   update public.categories set name = 'Engineers', color = 'blue' where name = 'Engineer';
-  assert (select category_name || '/' || category_color from public.contact_overview) = 'Engineers/blue',
+  assert (select (categories->0->>'name') || '/' || (categories->0->>'color') from public.contact_overview)
+    = 'Engineers/blue',
     'renaming a category should apply to its contacts';
   assert (select count(*) from public.search_contacts('engineers')) = 1,
     'search should match the category name';
@@ -151,11 +165,20 @@ begin
   exception when foreign_key_violation then null;
   end;
 
-  -- Labeling B's contact with A's category is blocked by the composite FK.
+  assert (select count(*) from public.contact_categories) = 0, 'B must not see A''s category links';
+
+  -- Labeling B's contact with A's category, or A's contact with B's, is blocked by the composite FKs.
+  insert into public.contacts (id, name) values ('c0000000-0000-4000-8000-0000000000bb', 'Bob');
   begin
-    insert into public.contacts (name, category_id)
-    values ('Bob', 'ca000000-0000-4000-8000-00000000000a');
+    insert into public.contact_categories (contact_id, category_id)
+    values ('c0000000-0000-4000-8000-0000000000bb', 'ca000000-0000-4000-8000-00000000000a');
     raise exception 'FAIL: B labeled a contact with A''s category';
+  exception when foreign_key_violation then null;
+  end;
+  begin
+    insert into public.contact_categories (contact_id, category_id)
+    select 'c0000000-0000-4000-8000-00000000000a', id from public.categories limit 1;
+    raise exception 'FAIL: B labeled A''s contact';
   exception when foreign_key_violation then null;
   end;
   update public.categories set name = 'hacked' where id = 'ca000000-0000-4000-8000-00000000000a';
@@ -220,10 +243,12 @@ begin
   assert (select count(*) from public.contacts where user_id is null) = 0,
     'user_id must never be nulled by SET NULL';
 
-  -- Deleting a category keeps the contact and clears its category.
+  -- Deleting a category keeps the contact and its other categories.
   delete from public.categories where name = 'Engineers';
   assert (select count(*) from public.contacts) = 1, 'contact must survive category deletion';
-  assert (select category_id is null from public.contacts), 'category_id must be cleared';
+  assert (select categories->0->>'name' from public.contact_overview) = 'Mentor'
+     and (select jsonb_array_length(categories) from public.contact_overview) = 1,
+    'only the deleted category should be removed from the contact';
 
   -- Deleting a contact cascades to its interactions.
   delete from public.contacts where id = 'c0000000-0000-4000-8000-00000000000a';

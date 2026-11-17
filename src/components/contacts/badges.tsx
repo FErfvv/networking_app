@@ -55,6 +55,41 @@ export function CategoryBadge({
   );
 }
 
+/**
+ * A contact's categories. With `max`, shows that many then a "+N" chip, for
+ * compact rows; the full list is in the chip's tooltip and accessible name.
+ */
+export function CategoryBadges({
+  categories,
+  max,
+  className,
+}: {
+  categories: { id: string; name: string; color: CategoryColor }[];
+  max?: number;
+  className?: string;
+}) {
+  if (categories.length === 0) return null;
+  const shown = max ? categories.slice(0, max) : categories;
+  const hidden = categories.slice(shown.length);
+  return (
+    <span className={cn("flex flex-wrap items-center gap-1", className)}>
+      {shown.map((c) => (
+        <CategoryBadge key={c.id} name={c.name} color={c.color} className="max-w-40 truncate" />
+      ))}
+      {hidden.length ? (
+        <Badge
+          variant="secondary"
+          className="border-0 bg-muted font-medium text-muted-foreground"
+          title={hidden.map((c) => c.name).join(", ")}
+          aria-label={`and ${hidden.map((c) => c.name).join(", ")}`}
+        >
+          +{hidden.length}
+        </Badge>
+      ) : null}
+    </span>
+  );
+}
+
 const STRENGTH_DOTS: Record<RelationshipStrength, number> = {
   new: 1,
   acquaintance: 2,

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,13 +23,12 @@ import {
   type RelationshipStrength,
 } from "@/lib/constants";
 import type { Category } from "@/lib/services/categories";
+import { cn } from "@/lib/utils";
 import { contactUpdateSchema, type ContactUpdateInput } from "@/lib/validation/contact";
 import { fieldErrorsOf } from "@/lib/validation/fields";
 import type { ContactOverviewRow } from "@/lib/types/database";
-import { CATEGORY_SWATCHES } from "./badges";
+import { CATEGORY_STYLES } from "./badges";
 import { TagInput } from "./tag-input";
-
-const NONE = "__none";
 
 export function ContactForm({
   contact,
@@ -54,13 +53,16 @@ export function ContactForm({
     linkedinUrl: contact.linkedin_url ?? "",
     whereMet: contact.where_met ?? "",
     firstMetOn,
-    categoryId: contact.category_id ?? "",
     relationshipStrength: contact.relationship_strength as RelationshipStrength,
     generalNotes: contact.general_notes ?? "",
     nextFollowUpOn: contact.next_follow_up_on ?? "",
     nextAction: contact.next_action ?? "",
   });
   const [tags, setTags] = useState<string[]>(contact.tag_names);
+  // Drop links to categories that no longer exist (deleted in another tab).
+  const [categoryIds, setCategoryIds] = useState<string[]>(() =>
+    contact.category_ids.filter((id) => categories.some((c) => c.id === id)),
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
 
@@ -75,6 +77,7 @@ export function ContactForm({
       ...v,
       // Only send firstMetOn if the user changed it, so we keep the exact original timestamp.
       firstMetOn: v.firstMetOn !== firstMetOn ? v.firstMetOn : null,
+      categoryIds,
       tags,
     };
     const parsed = contactUpdateSchema.safeParse(input);
@@ -139,25 +142,6 @@ export function ContactForm({
       <fieldset className="space-y-4">
         <legend className="mb-2 text-sm font-medium text-muted-foreground">Relationship</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <F
-            label="Category"
-            id="category"
-            error={errors.categoryId}
-            hint={<Link href="/settings#categories" className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">Edit categories</Link>}
-          >
-            <Select value={v.categoryId || NONE} onValueChange={(x) => setV((s) => ({ ...s, categoryId: x === NONE ? "" : x }))}>
-              <SelectTrigger id="category" className="h-11 w-full"><SelectValue /></SelectTrigger>
-              <SelectContent position="popper" className="max-h-72">
-                <SelectItem value={NONE}>No category</SelectItem>
-                {categories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    <span aria-hidden className={`size-2 shrink-0 rounded-full ${CATEGORY_SWATCHES[c.color]}`} />
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </F>
           <F label="Strength" id="strength">
             <Select value={v.relationshipStrength} onValueChange={(x) => setV((s) => ({ ...s, relationshipStrength: x as RelationshipStrength }))}>
               <SelectTrigger id="strength" className="h-11 w-full"><SelectValue /></SelectTrigger>
@@ -182,6 +166,12 @@ export function ContactForm({
             <Input id="nextAction" value={v.nextAction} onChange={set("nextAction")} maxLength={500} className="h-11" placeholder="e.g. Send resume, ask about referral" />
           </F>
         </div>
+        <CategoryPicker
+          categories={categories}
+          value={categoryIds}
+          onChange={setCategoryIds}
+          error={errors.categoryIds}
+        />
         <F label="Tags" id="tags" error={errors.tags}>
           <TagInput id="tags" value={tags} onChange={setTags} suggestions={tagSuggestions} />
         </F>
@@ -203,14 +193,73 @@ export function ContactForm({
   );
 }
 
-function F({ label, id, error, hint, children }: { label: string; id: string; error?: string; hint?: React.ReactNode; children: React.ReactNode }) {
+function F({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <div className="flex items-baseline justify-between gap-2">
-        <Label htmlFor={id}>{label}</Label>
-        {hint}
-      </div>
+      <Label htmlFor={id}>{label}</Label>
       {children}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+    </div>
+  );
+}
+
+/** Toggle chips: tap a category to add or remove it. */
+function CategoryPicker({
+  categories,
+  value,
+  onChange,
+  error,
+}: {
+  categories: Category[];
+  value: string[];
+  onChange: (ids: string[]) => void;
+  error?: string;
+}) {
+  const selected = new Set(value);
+  const toggle = (id: string) =>
+    onChange(selected.has(id) ? value.filter((x) => x !== id) : [...value, id]);
+
+  return (
+    <div className="space-y-1.5" role="group" aria-labelledby="categories-label">
+      <div className="flex items-baseline justify-between gap-2">
+        <span id="categories-label" className="text-sm leading-none font-medium select-none">
+          Categories
+        </span>
+        <Link
+          href="/settings#categories"
+          className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Edit categories
+        </Link>
+      </div>
+      {categories.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No categories yet. Add some in Settings.
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {categories.map((c) => {
+            const on = selected.has(c.id);
+            return (
+              <button
+                key={c.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => toggle(c.id)}
+                className={cn(
+                  "inline-flex h-9 max-w-full items-center gap-1 rounded-full border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                  on
+                    ? cn("border-transparent", CATEGORY_STYLES[c.color])
+                    : "border-dashed text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {on ? <Check className="size-3.5 shrink-0" aria-hidden /> : null}
+                <span className="truncate">{c.name}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
     </div>
   );
