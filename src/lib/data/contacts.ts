@@ -12,6 +12,8 @@ import type { AuthedContext } from "@/lib/auth";
 
 export const DIRECTORY_LIMIT = 1000;
 
+const NAME_COLLATOR = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
+
 export type DirectoryParams = {
   q: string;
   sort: ContactSort;
@@ -68,7 +70,10 @@ export async function listContacts(
 
   const { data, error } = await query.limit(DIRECTORY_LIMIT);
   if (error) throw new Error(`Failed to load contacts: ${error.message}`);
-  return (data ?? []) as ContactOverviewRow[];
+  const rows = (data ?? []) as ContactOverviewRow[];
+  // The database collation may put "ada" after "Zed"; re-sort case- and accent-insensitively.
+  if (params.sort === "name") rows.sort((a, b) => NAME_COLLATOR.compare(a.name, b.name));
+  return rows;
 }
 
 /** Names, emails and phones of every saved contact, for import duplicate flags. */

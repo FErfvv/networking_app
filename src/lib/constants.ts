@@ -59,7 +59,7 @@ export const CONTACT_SORTS = ["name", "recent", "contacted"] as const;
 export type ContactSort = (typeof CONTACT_SORTS)[number];
 
 export const SORT_LABELS: Record<ContactSort, string> = {
-  name: "Name",
+  name: "Name (A–Z)",
   recent: "Recently added",
   contacted: "Recently contacted",
 };

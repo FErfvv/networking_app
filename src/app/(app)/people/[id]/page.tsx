@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import {
-  ArrowLeft,
   CalendarDays,
   ExternalLink,
   Link2 as Linkedin,
@@ -12,6 +11,7 @@ import {
   Pencil,
   Phone,
 } from "lucide-react";
+import { BackToPeople } from "@/components/contacts/back-to-people";
 import { Avatar, CategoryBadge, StrengthIndicator } from "@/components/contacts/badges";
 import { DeleteContactButton } from "@/components/contacts/delete-contact-button";
 import { FollowUpChip } from "@/components/contacts/contact-list";
@@ -31,13 +31,7 @@ import { getUserToday } from "@/lib/tz";
 export default function ContactPage({ params }: PageProps<"/people/[id]">) {
   return (
     <div className="mx-auto max-w-3xl">
-      <Link
-        href="/people"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        People
-      </Link>
+      <BackToPeople />
       <Suspense fallback={<ProfileSkeleton />}>
         <Profile params={params} />
       </Suspense>

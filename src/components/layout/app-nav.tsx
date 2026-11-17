@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 import { Contact } from "lucide-react";
+import { useDirectoryHref } from "@/lib/directory-query";
 import { cn } from "@/lib/utils";
 import { APP_NAME } from "@/lib/constants";
 import { NAV_ITEMS, SETTINGS_ITEM, isActive } from "./nav-items";
@@ -27,6 +28,7 @@ function SidebarWithPath() {
 
 /** Desktop sidebar (md and up). */
 function SidebarView({ pathname }: { pathname: string | null }) {
+  const peopleHref = useDirectoryHref();
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r bg-sidebar px-3 py-4 md:flex">
       <Link href="/" className="mb-6 flex items-center gap-2.5 px-2">
@@ -37,7 +39,12 @@ function SidebarView({ pathname }: { pathname: string | null }) {
       </Link>
       <nav aria-label="Main" className="flex flex-1 flex-col gap-0.5">
         {NAV_ITEMS.map((item) => (
-          <SidebarLink key={item.href} {...item} active={pathname !== null && isActive(pathname, item.href)} />
+          <SidebarLink
+            key={item.href}
+            {...item}
+            href={item.href === "/people" ? peopleHref : item.href}
+            active={pathname !== null && isActive(pathname, item.href)}
+          />
         ))}
         <div className="mt-auto">
           <SidebarLink
@@ -90,6 +97,7 @@ function BottomNavWithPath() {
 
 /** Mobile bottom tab bar. */
 function BottomNavView({ pathname }: { pathname: string | null }) {
+  const peopleHref = useDirectoryHref();
   return (
     <nav
       aria-label="Main"
@@ -101,7 +109,7 @@ function BottomNavView({ pathname }: { pathname: string | null }) {
           return (
             <li key={href}>
               <Link
-                href={href}
+                href={href === "/people" ? peopleHref : href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex h-14 flex-col items-center justify-center gap-0.5 text-[11px] font-medium text-muted-foreground transition-colors focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset",

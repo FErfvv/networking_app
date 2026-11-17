@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { CONTACT_SORTS, NO_CATEGORY, SORT_LABELS } from "@/lib/constants";
+import { saveDirectoryQuery } from "@/lib/directory-query";
 import type { Category } from "@/lib/services/categories";
 import { CATEGORY_SWATCHES } from "./badges";
 
@@ -54,6 +55,10 @@ export function DirectoryFilters({
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
+
+  // Remember this view so "back to People" links can restore it.
+  const query = sp.toString();
+  useEffect(() => saveDirectoryQuery(query), [query]);
 
   const hasFilters = Boolean(sp.get("q") || sp.get("category") || sp.get("company"));
 

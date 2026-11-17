@@ -232,4 +232,8 @@ begin
   raise notice 'ALL RLS TESTS PASSED';
 end $$;
 
+-- The Supabase SQL editor shows only the last result set (not notices), so
+-- end with a visible row. Reaching this line means every assertion passed.
+select 'ALL RLS TESTS PASSED' as result;
+
 rollback;

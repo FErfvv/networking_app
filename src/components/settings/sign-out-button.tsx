@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { Loader2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { signOutAction } from "@/lib/actions/auth";
+import { clearDirectoryQuery } from "@/lib/directory-query";
 import { clearUserData, readQueue } from "@/lib/offline-queue";
 
 /**
@@ -30,6 +31,7 @@ export function SignOutButton({ userId }: { userId: string }) {
     }
     try {
       clearUserData(window.localStorage, userId);
+      clearDirectoryQuery();
     } catch {
       /* ignore */
     }
